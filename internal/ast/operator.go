@@ -19,26 +19,20 @@ const (
 	OpOr
 )
 
-var 	idMap = map[string]Operator{
-	"<":  OpLessThan,
-	"<=": OpLessThanEqual,
-	"!":  OpUnaryNot,
-	"&&": OpAnd ,
-	"||": OpOr,
-}
-
-func getOpID(op string)(Operator, error){
-	id, ok := idMap[op]
-	if !ok {
-		return OpUnknown, NewUnsupportedOperatorError(op)
-	}
-	return id, nil
-}
-
-func (o *Operator) Capture(s []string)(err error) {
+func (o *Operator) Capture(s []string) error {
 	key := strings.Join(s, "")
-	*o, err = getOpID(key)
-	return
+	idMap := map[string]Operator{
+		"<":  OpLessThan,
+		"<=": OpLessThanEqual,
+		"!":  OpUnaryNot,
+		"&&": OpAnd ,
+		"||": OpOr,
+	}
+	var ok bool
+	if *o, ok = idMap[key]; !ok {
+		return NewUnsupportedOperatorError(key)
+	}
+	return nil
 }
 
 func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
