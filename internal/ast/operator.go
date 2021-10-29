@@ -15,8 +15,12 @@ const (
 	OpUnaryNot
 	OpLessThan
 	OpLessThanEqual
+	OpGreaterThan
+	OpGreaterThanOrEqualTo
 	OpAnd
 	OpOr
+	OpEqualTo
+	OpNotEqualTo
 )
 
 func (o *Operator) Capture(s []string) error {
@@ -27,6 +31,10 @@ func (o *Operator) Capture(s []string) error {
 		"!":  OpUnaryNot,
 		"&&": OpAnd ,
 		"||": OpOr,
+		"==": OpEqualTo,
+		"!=": OpNotEqualTo,
+		">": OpGreaterThan,
+		">=": OpGreaterThanOrEqualTo,
 	}
 	var ok bool
 	if *o, ok = idMap[key]; !ok {
@@ -63,6 +71,56 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				}
 				if !hasNilStrings(l, r) {
 					return BoolVal(*l.String <= *r.String), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpGreaterThan: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilNumbers(l, r) {
+					return BoolVal(*l.Number > *r.Number), nil
+				}
+				if !hasNilStrings(l, r) {
+					return BoolVal(*l.String > *r.String), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpGreaterThanOrEqualTo: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilNumbers(l, r) {
+					return BoolVal(*l.Number <= *r.Number), nil
+				}
+				if !hasNilStrings(l, r) {
+					return BoolVal(*l.String <= *r.String), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpEqualTo: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilNumbers(l, r) {
+					return BoolVal(*l.Number == *r.Number), nil
+				}
+				if !hasNilStrings(l, r) {
+					return BoolVal(*l.String == *r.String), nil
+				}
+				if !hasNilBools(l,r) {
+					return BoolVal(bool(*l.Bool) == bool(*r.Bool) ), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpNotEqualTo: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilNumbers(l, r) {
+					return BoolVal(*l.Number != *r.Number), nil
+				}
+				if !hasNilStrings(l, r) {
+					return BoolVal(*l.String != *r.String), nil
+				}
+				if !hasNilBools(l,r) {
+					return BoolVal(bool(*l.Bool) != bool(*r.Bool) ), nil
 				}
 				return nil, NewSyntaxError("type mismatch")
 			})

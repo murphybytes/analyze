@@ -5,7 +5,6 @@ import (
 	"github.com/murphybytes/dsl/context"
 )
 
-
 // Value represents data types supported by the predicate expression.
 type Value struct {
 	// Number is the represents floats and integer types in expressions.
@@ -24,10 +23,7 @@ type Value struct {
 	// These are not set directly in expressions and are used to represent data passed by context.
 	Object map[string]interface{}
 	Array []interface{}
-
-
 }
-
 
 func(v *Value) Eval(ctx context.Context)(*Value, error){
 	// TODO: Fix this so it only gets evaluated once
@@ -60,7 +56,7 @@ func (un *UnaryOpValue) Eval(ctx context.Context)(*Value,error) {
 }
 
 type ComparisonOpValue struct {
-	Operator Operator `@("<" | "<=")?`
+	Operator Operator `@("<" | "<=" | "==" | "!=" | ">" | ">=" )?`
 	Value    *UnaryOpValue             `@@`
 }
 
@@ -93,7 +89,7 @@ func(c *ComparisonOpTerm) Eval(ctx context.Context)(*Value, error){
 
 
 type LogicalOpValue struct {
-	Operator Operator `@("&&")`
+	Operator Operator `@("&&" | "||")`
 	Value *ComparisonOpTerm `@@`
 }
 

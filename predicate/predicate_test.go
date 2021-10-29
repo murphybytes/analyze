@@ -92,6 +92,36 @@ func TestEval(t *testing.T) {
 			expected: true,
 		},
 		{
+			name: "string equality",
+			expression: `"one" == "one"`,
+			expected: true,
+		},
+		{
+			name: "string equality false ",
+			expression: `"one" == "two"`,
+			expected: false,
+		},
+		{
+			name: "string not equals ",
+			expression: `"one" != "two"`,
+			expected: true,
+		},
+		{
+			name: "binary or",
+			expression: `( 2 < 1 ) || ( 5 < 6)`,
+			expected: true,
+		},
+		{
+			name: "greater than",
+			expression: `2 > 1`,
+			expected: true,
+		},
+		{
+			name: "greater than or equal to",
+			expression: `3 >= 4 && 3 >= 3`,
+			expected: true,
+		},
+		{
 			name:       "index into array",
 			expression: `1 < $foo[1].bar`,
 			context: map[string]interface{}{
