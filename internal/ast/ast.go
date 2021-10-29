@@ -44,7 +44,7 @@ func(v *Value) Eval(ctx context.Context)(*Value, error){
 }
 
 type UnaryOpValue struct {
-	Operator UnaryOperator `@("!")?`
+	Operator *Operator `@("!")?`
 	Value *Value `@@`
 }
 
@@ -53,11 +53,14 @@ func (un *UnaryOpValue) Eval(ctx context.Context)(*Value,error) {
 	if err != nil {
 		return nil, err
 	}
-	return un.Operator.Eval(ctx, v)
+	if un.Operator != nil {
+		return un.Operator.Eval(ctx,v)
+	}
+	return v, nil
 }
 
 type ComparisonOpValue struct {
-	Operator ComparisonOperator `@("<" | "<=")?`
+	Operator Operator `@("<" | "<=")?`
 	Value    *UnaryOpValue             `@@`
 }
 
@@ -90,7 +93,7 @@ func(c *ComparisonOpTerm) Eval(ctx context.Context)(*Value, error){
 
 
 type LogicalOpValue struct {
-	Operator LogicalOperator `@("&&")`
+	Operator Operator `@("&&")`
 	Value *ComparisonOpTerm `@@`
 }
 

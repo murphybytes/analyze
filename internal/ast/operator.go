@@ -1,173 +1,143 @@
 package ast
 
 import (
-	"strings"
-	"sync"
-
 	"github.com/murphybytes/dsl/context"
+	"strings"
 )
 
-type ComparisonOperator int
+// TODO: combine operator into one thing, the precedence is controlled in the ast tags so there is no reason to
+// TODO: segregate them here .
+
+type Operator int
 
 const (
-	UnknownComparison ComparisonOperator = iota
+	OpUnknown Operator = iota
+	OpUnaryNot
 	OpLessThan
 	OpLessThanEqual
+	OpAnd
+	OpOr
 )
 
-var comparisonOps = map[string]ComparisonOperator{
+var 	idMap = map[string]Operator{
 	"<":  OpLessThan,
 	"<=": OpLessThanEqual,
+	"!":  OpUnaryNot,
+	"&&": OpAnd ,
+	"||": OpOr,
 }
 
-var comparisonOpMut sync.Mutex
-
-func getComparisonOpID(op string) (ComparisonOperator, error) {
-	comparisonOpMut.Lock()
-	defer comparisonOpMut.Unlock()
-	id, ok := comparisonOps[op]
+func getOpID(op string)(Operator, error){
+	id, ok := idMap[op]
 	if !ok {
-		return UnknownComparison, NewUnsupportedOperatorError(op)
+		return OpUnknown, NewUnsupportedOperatorError(op)
 	}
 	return id, nil
 }
 
-func (o *ComparisonOperator) Capture(s []string) (err error) {
+func (o *Operator) Capture(s []string)(err error) {
 	key := strings.Join(s, "")
-	*o, err = getComparisonOpID(key)
+	*o, err = getOpID(key)
 	return
 }
 
-func (o ComparisonOperator) Eval(_ context.Context, l, r *Value) (*Value, error) {
-	if l.Number != nil && r.Number != nil {
-		return compareNumber(o, *l.Number, *r.Number), nil
+func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
+	fnMap := map[Operator]func(context.Context, ...*Value) (*Value, error){
+		OpUnaryNot: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapUnary(values, func(l *Value) (*Value, error) {
+				if !hasNilBools(l) {
+					return BoolVal(!bool(*l.Bool)), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpLessThan: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilNumbers(l, r) {
+					return BoolVal(*l.Number < *r.Number), nil
+				}
+				if !hasNilStrings(l, r) {
+					return BoolVal(*l.String < *r.String), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpLessThanEqual: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilNumbers(l, r) {
+					return BoolVal(*l.Number <= *r.Number), nil
+				}
+				if !hasNilStrings(l, r) {
+					return BoolVal(*l.String <= *r.String), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpAnd: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilBools(l, r) {
+					return BoolVal(bool(*l.Bool) && bool(*r.Bool)), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
+		OpOr: func(ctx context.Context, values ...*Value) (*Value, error) {
+			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				if !hasNilBools(l, r) {
+					return BoolVal(bool(*l.Bool) || bool(*r.Bool)), nil
+				}
+				return nil, NewSyntaxError("type mismatch")
+			})
+		},
 	}
-	if l.String != nil && r.String != nil {
-		return compareString(o, *l.String, *r.String), nil
+
+	// find the function that maps to a particular operator, evaluate the variables it uses to resolve variables,
+	// functions, and subexpressions to types, and execute
+	if fn, ok := fnMap[*o]; ok {
+		return fn(ctx, values...)
 	}
-	return nil, TypeMismatchError(l, r)
+
+	return nil, NewSyntaxError("eval called on uninitialzed operator")
 }
 
-func compareNumber(o ComparisonOperator, l, r float64) *Value {
-	switch o {
-	case OpLessThan:
-		return BoolVal(l < r)
-	case OpLessThanEqual:
-		return BoolVal(l <= r)
+func mapBinary(vals []*Value, fn func(l, r *Value) (*Value, error)) (*Value, error) {
+	if len(vals) != 2 {
+		return nil, NewSyntaxError("expected 2 arguments got %d", len(vals))
 	}
-	panic("unsupported operator")
+	return fn(vals[0], vals[1])
 }
 
-func compareString(o ComparisonOperator, l, r string) *Value {
-	switch o {
-	case OpLessThan:
-		return BoolVal(l < r)
-	case OpLessThanEqual:
-		return BoolVal(l <= r)
+func mapUnary(vals []*Value, fn func(v *Value) (*Value, error)) (*Value, error) {
+	ln := len(vals)
+	if ln != 1 {
+		return nil, NewSyntaxError("expected 1 argument got %d", ln)
 	}
-	panic("unsupported operator")
+	return fn(vals[0])
 }
 
-type UnaryOperator int
-
-const (
-	UnassignedUnary UnaryOperator = iota
-	UnaryNot
-)
-
-var unaryOps = map[string]UnaryOperator{
-	"!": UnaryNot,
-}
-
-var unaryOpMut sync.Mutex
-
-func getUnaryOpID(op string) (UnaryOperator, error) {
-	unaryOpMut.Lock()
-	defer unaryOpMut.Unlock()
-	id, ok := unaryOps[op]
-	if !ok {
-		return UnassignedUnary, NewUnsupportedOperatorError(op)
-	}
-	return id, nil
-}
-
-func (o *UnaryOperator) Capture(s []string) (err error) {
-	key := strings.Join(s, "")
-	*o, err = getUnaryOpID(key)
-	return
-}
-
-func (o UnaryOperator) Eval(_ context.Context, v *Value) (*Value, error) {
-	switch o {
-	case UnaryNot:
+func hasNilBools(vals ...*Value) bool {
+	for _, v := range vals {
 		if v.Bool == nil {
-			return nil, NewSyntaxError("nil bool not allowed")
+			return true
 		}
-		return &Value{
-			Bool: v.Bool.Not(),
-		}, nil
-	case UnassignedUnary:
-		return v, nil
-
 	}
-	panic("unknown operator type")
+	return false
 }
 
-type LogicalOperator int
-
-const (
-	UnassignedLogical LogicalOperator = iota
-	LogicalAnd
-	LogicalOr
-)
-
-var logicalOps = map[string]LogicalOperator{
-	"&&": LogicalAnd,
-	"||": LogicalOr,
-}
-
-var logicalOpMut sync.Mutex
-
-func getLogicalOpID(op string) (LogicalOperator, error) {
-	logicalOpMut.Lock()
-	defer logicalOpMut.Unlock()
-	id, ok := logicalOps[op]
-	if !ok {
-		return UnassignedLogical, NewUnsupportedOperatorError(op)
+func hasNilNumbers(vals ...*Value) bool {
+	for _, v := range vals {
+		if v.Number == nil {
+			return true
+		}
 	}
-	return id, nil
+	return false
 }
 
-func (o *LogicalOperator) Capture(s []string) (err error) {
-	key := strings.Join(s, "")
-	*o, err = getLogicalOpID(key)
-	return
-}
-
-func (o LogicalOperator) Eval(_ context.Context, l, r *Value) (*Value, error) {
-	switch o {
-	case LogicalAnd:
-		return and(l, r)
-	case LogicalOr:
-		return or(l, r)
+func hasNilStrings(vals ...*Value) bool {
+	for _, v := range vals {
+		if v.String == nil {
+			return true
+		}
 	}
-	return nil, NewSyntaxError("unsupported logical operator")
-}
-
-func and(l, r *Value) (*Value, error) {
-	if l.Bool != nil && r.Bool != nil {
-		lv := bool(*l.Bool)
-		rv := bool(*r.Bool)
-		return BoolVal(lv && rv), nil
-	}
-	return nil, NewSyntaxError("nil bool not allowed")
-}
-
-func or(l, r *Value) (*Value, error) {
-	if l.Bool != nil && r.Bool != nil {
-		lv := bool(*l.Bool)
-		rv := bool(*r.Bool)
-		return BoolVal(lv || rv), nil
-	}
-	return nil, NewSyntaxError("nil bool not allowed")
+	return false
 }

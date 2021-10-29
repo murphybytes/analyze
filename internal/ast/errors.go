@@ -11,6 +11,7 @@ const (
 	SyntaxError
 	MissingKey
 	IndexOutOfRange
+	UnexpectedError
 
 )
 
@@ -30,6 +31,13 @@ func (ea ErrAst) Error() string {
 
 func (ea ErrAst) Type() ErrType {
 	return ea.typ
+}
+
+func NewUnexpectedError(form string, v ...interface{}) error {
+	return &ErrAst{
+		msg: fmt.Sprintf("unexpected error: %s", fmt.Sprintf(form, v...)),
+		typ: UnexpectedError,
+	}
 }
 
 // UnsupportedTypeError is raised when data passed in the context doesn't map
