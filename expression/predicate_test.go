@@ -1,9 +1,9 @@
-package predicate
+package expression
 
 import (
 	"testing"
 
-	"github.com/murphybytes/dsl/context"
+	"github.com/murphybytes/analyze/context"
 	"github.com/stretchr/testify/require"
 )
 

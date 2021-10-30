@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/murphybytes/dsl/context"
+	"github.com/murphybytes/analyze/context"
 )
 
 type Boolean bool

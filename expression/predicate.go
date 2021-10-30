@@ -1,8 +1,8 @@
-package predicate
+package expression
 
 import (
-	"github.com/murphybytes/dsl/context"
-	"github.com/murphybytes/dsl/internal/ast"
+	"github.com/murphybytes/analyze/context"
+	"github.com/murphybytes/analyze/internal/ast"
 )
 
 func Evaluate(expression string, ctx context.Context) (bool, error) {

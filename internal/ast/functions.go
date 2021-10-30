@@ -1,7 +1,7 @@
 package ast
 
-import "github.com/murphybytes/dsl/context"
-
+import "github.com/murphybytes/analyze/context"
+//nolint
 type Function struct {
 	Name string `@Function`
 	Args []*Expression `"(" ( @@ ( "," @@ )* )? ")"`

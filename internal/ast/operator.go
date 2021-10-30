@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/murphybytes/dsl/context"
+	"github.com/murphybytes/analyze/context"
 	"strings"
 )
 

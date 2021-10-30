@@ -2,10 +2,11 @@
 package ast
 
 import (
-	"github.com/murphybytes/dsl/context"
+	"github.com/murphybytes/analyze/context"
 )
 
 // Value represents data types supported by the predicate expression.
+//nolint
 type Value struct {
 	// Number is the represents floats and integer types in expressions.
 	Number *float64 ` @Number`
@@ -38,7 +39,7 @@ func(v *Value) Eval(ctx context.Context)(*Value, error){
 	}
 	return v, nil
 }
-
+//nolint
 type UnaryOpValue struct {
 	Operator *Operator `@("!")?`
 	Value *Value `@@`
@@ -54,7 +55,7 @@ func (un *UnaryOpValue) Eval(ctx context.Context)(*Value,error) {
 	}
 	return v, nil
 }
-
+//nolint
 type ComparisonOpValue struct {
 	Operator Operator `@("<" | "<=" | "==" | "!=" | ">" | ">=" )?`
 	Value    *UnaryOpValue             `@@`
@@ -63,7 +64,7 @@ type ComparisonOpValue struct {
 func(c *ComparisonOpValue) Eval(ctx context.Context)(*Value,error) {
 	return c.Value.Eval(ctx)
 }
-
+//nolint
 type ComparisonOpTerm struct {
 	Left *UnaryOpValue `@@`
 	Right []*ComparisonOpValue `@@*`
@@ -87,13 +88,13 @@ func(c *ComparisonOpTerm) Eval(ctx context.Context)(*Value, error){
 	return lv, nil
 }
 
-
+//nolint
 type LogicalOpValue struct {
 	Operator Operator `@("&&" | "||")`
 	Value *ComparisonOpTerm `@@`
 }
 
-
+//nolint
 type Expression struct {
 	Left *ComparisonOpTerm         `@@`
 	Right []*LogicalOpValue `@@*`
