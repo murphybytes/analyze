@@ -133,6 +133,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 		},
 		OpAnd: func(ctx context.Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				// short circuit eval, if lval is false, ignore rval and return false
+				if l.Bool != nil && !bool(*l.Bool) {
+					return BoolVal(false), nil
+				}
 				if !hasNilBools(l, r) {
 					return BoolVal(bool(*l.Bool) && bool(*r.Bool)), nil
 				}
@@ -141,6 +145,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 		},
 		OpOr: func(ctx context.Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
+				// short circuit eval, if lval is true, ignore rval and return true
+				if l.Bool != nil && bool(*l.Bool) {
+					return BoolVal(true), nil
+				}
 				if !hasNilBools(l, r) {
 					return BoolVal(bool(*l.Bool) || bool(*r.Bool)), nil
 				}

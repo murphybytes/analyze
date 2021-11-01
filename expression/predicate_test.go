@@ -180,6 +180,28 @@ func TestEval(t *testing.T) {
 			context: nil,
 			expected: false,
 		},
+		{
+			// avoid type mismatch because $foo.bar == 3 never is evaluated
+			name: "short circuit and",
+			expression: `false && $foo.bar == 3`,
+			context: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": nil,
+				},
+			},
+			expected: false,
+		},
+		{
+			// avoid type mismatch because $foo.bar == 3 never is evaluated
+			name: "short circuit or",
+			expression: `true || $foo.bar == 3`,
+			context: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": nil,
+				},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tt {

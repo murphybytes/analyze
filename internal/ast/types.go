@@ -71,6 +71,7 @@ func walkCtx(keys []string, ctx context.Context)(*Value, error){
 var regexObjectRef = regexp.MustCompile(`^[\w\-]*\[\s*"[\w\-]+"\s*\]$`)
 // matches foo[2]
 var regexArrayRef =  regexp.MustCompile(`^[\w\-]*\[\s*[0-9]+\s*\]$`)
+
 // Variable names can include index expressions to map into an object, or to reference particular array elements
 // i.e. $foo.someObject["field"] or $foo.someArray[3]. This function extracts the value referenced by the key and
 // returns it. It also handles the case when the  root element refers to an array, number, string etc.
