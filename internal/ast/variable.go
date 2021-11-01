@@ -2,11 +2,10 @@ package ast
 
 import (
 	"fmt"
+	"github.com/murphybytes/analyze/errors"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/murphybytes/analyze/context"
 )
 
 type NilFlag bool
@@ -45,24 +44,24 @@ func (v *Variable) Capture(s []string) error {
 	return nil
 }
 
-func (v *Variable) Eval(ctx context.Context) (*Value, error) {
+func (v *Variable) Eval(ctx Context) (*Value, error) {
 	keys := strings.Split(string(*v), ".")
-	return walkCtx(keys, ctx)
+	return walkCtx(keys, ctx.Data())
 }
 // Traverse variable segments left to right using each segment to look up object in context data
 // until we get to the get to the last element, then return its value.
-func walkCtx(keys []string, ctx context.Context)(*Value, error){
+func walkCtx(keys []string, val interface{})(*Value, error){
 	key := keys[0]; keys = keys[1:]
-	inf, err := extractVariableElement(ctx, key)
+	inf, err := extractVariableElement(val, key)
 	if err != nil {
 		return nil, err
 	}
 	if len(keys) > 0 {
-		nextCtx, ok := inf.(map[string]interface{})
+		nextVal, ok := inf.(map[string]interface{})
 		if !ok {
 			return nil, fmt.Errorf("expected context element not correct type")
 		}
-		return walkCtx(keys, nextCtx)
+		return walkCtx(keys, nextVal)
 	}
 	// we are at our terminal element convert to appropriate value type
 	return convertToValue(inf)
@@ -75,10 +74,10 @@ var regexArrayRef =  regexp.MustCompile(`^[\w\-]*\[\s*[0-9]+\s*\]$`)
 // Variable names can include index expressions to map into an object, or to reference particular array elements
 // i.e. $foo.someObject["field"] or $foo.someArray[3]. This function extracts the value referenced by the key and
 // returns it. It also handles the case when the  root element refers to an array, number, string etc.
-func extractVariableElement(ctx context.Context, reference string)(interface{}, error){
+func extractVariableElement(val interface{}, reference string)(interface{}, error){
 	reference = strings.Trim(reference, " ")
 
-	switch t := ctx.(type) {
+	switch t := val.(type) {
 	case []interface{}:
 		return resolveArrayElement(t, reference)
 	case map[string]interface{}:
@@ -86,7 +85,7 @@ func extractVariableElement(ctx context.Context, reference string)(interface{}, 
 	}
 
 	// pass through scalar types
-	return ctx, nil
+	return val, nil
 }
 
 func convertToValue(intf interface{})(*Value,error){
@@ -113,7 +112,7 @@ func convertToValue(intf interface{})(*Value,error){
 	case nil:
 		val.NilSet = true
 	default:
-		return nil, UnsupportedTypeError(intf)
+		return nil, errors.UnsupportedTypeError(intf)
 	}
 	return &val, nil
 }
@@ -121,16 +120,16 @@ func convertToValue(intf interface{})(*Value,error){
 func resolveArrayElement(arr []interface{}, reference string)(interface{}, error){
 	// make sure the variable expression looks like an array
 	if !regexArrayRef.MatchString(reference) {
-		return nil, NewSyntaxError("expected array reference got %q", reference)
+		return nil, errors.NewSyntaxError("expected array reference got %q", reference)
 	}
 	pts := strings.Split(reference, "[")
 	indexStr := pts[1]
 	index, err  := strconv.Atoi(strings.TrimRight(indexStr, ` ]`))
 	if err != nil {
-		return nil, NewSyntaxError("error resolving array index %q", err )
+		return nil, errors.NewSyntaxError("error resolving array index %q", err )
 	}
 	if !(index < len(arr)) {
-		return nil, NewSyntaxError("index out of range")
+		return nil, errors.NewSyntaxError("index out of range")
 	}
 	return arr[index], nil
 }
@@ -145,12 +144,12 @@ func resolveObjectField(obj map[string]interface{}, reference string)(interface{
 		var ok bool
 		if len(key) > 0 {
 			if obj, ok = obj[key].(map[string]interface{}); !ok {
-				return nil, MissingKeyError(key)
+				return nil, errors.MissingKeyError(key)
 			}
 		}
 		var result interface{}
 		if result, ok = obj[index]; !ok {
-			return nil, IndexOutOfRangeError(reference)
+			return nil, errors.IndexOutOfRangeError(reference)
 		}
 
 		return result, nil
@@ -163,15 +162,15 @@ func resolveObjectField(obj map[string]interface{}, reference string)(interface{
 		// we expect an array
 		index, err := strconv.Atoi(strings.Trim(str, ` ]`))
 		if err != nil {
-			return nil, NewSyntaxError(fmt.Sprintf("can't resolve %s into an array element", reference))
+			return nil, errors.NewSyntaxError(fmt.Sprintf("can't resolve %s into an array element", reference))
 		}
 		arr, ok := obj[key].([]interface{})
 		if !ok {
-			return nil, MissingKeyError(key)
+			return nil, errors.MissingKeyError(key)
 		}
 
 		if !(index < len(arr)) {
-			return nil, IndexOutOfRangeError(reference)
+			return nil, errors.IndexOutOfRangeError(reference)
 		}
 
 		return arr[index], nil

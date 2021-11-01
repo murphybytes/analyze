@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/murphybytes/analyze/context"
+	"github.com/murphybytes/analyze/errors"
 	"strings"
 )
 
@@ -38,22 +38,22 @@ func (o *Operator) Capture(s []string) error {
 	}
 	var ok bool
 	if *o, ok = idMap[key]; !ok {
-		return NewUnsupportedOperatorError(key)
+		return errors.New(errors.UnsupportedOperator, "unsupported operator %q", key )
 	}
 	return nil
 }
 
-func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
-	fnMap := map[Operator]func(context.Context, ...*Value) (*Value, error){
-		OpUnaryNot: func(ctx context.Context, values ...*Value) (*Value, error) {
+func (o *Operator) Eval(ctx Context, values ...*Value) (*Value, error) {
+	fnMap := map[Operator]func(Context, ...*Value) (*Value, error){
+		OpUnaryNot: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapUnary(values, func(l *Value) (*Value, error) {
 				if !hasNilBools(l) {
 					return BoolVal(!bool(*l.Bool)), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpLessThan: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpLessThan: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				if !hasNilNumbers(l, r) {
 					return BoolVal(*l.Number < *r.Number), nil
@@ -61,10 +61,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if !hasNilStrings(l, r) {
 					return BoolVal(*l.String < *r.String), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpLessThanEqual: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpLessThanEqual: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				if !hasNilNumbers(l, r) {
 					return BoolVal(*l.Number <= *r.Number), nil
@@ -72,10 +72,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if !hasNilStrings(l, r) {
 					return BoolVal(*l.String <= *r.String), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpGreaterThan: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpGreaterThan: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				if !hasNilNumbers(l, r) {
 					return BoolVal(*l.Number > *r.Number), nil
@@ -83,10 +83,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if !hasNilStrings(l, r) {
 					return BoolVal(*l.String > *r.String), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpGreaterThanOrEqualTo: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpGreaterThanOrEqualTo: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				if !hasNilNumbers(l, r) {
 					return BoolVal(*l.Number <= *r.Number), nil
@@ -94,10 +94,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if !hasNilStrings(l, r) {
 					return BoolVal(*l.String <= *r.String), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpEqualTo: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpEqualTo: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				if !hasNilNumbers(l, r) {
 					return BoolVal(*l.Number == *r.Number), nil
@@ -111,10 +111,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if l.NilSet || r.NilSet {
 					return BoolVal(l.IsNil() == r.IsNil()), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpNotEqualTo: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpNotEqualTo: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				if !hasNilNumbers(l, r) {
 					return BoolVal(*l.Number != *r.Number), nil
@@ -128,10 +128,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if l.NilSet || r.NilSet {
 					return BoolVal(l.IsNil() != r.IsNil()), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpAnd: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpAnd: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				// short circuit eval, if lval is false, ignore rval and return false
 				if l.Bool != nil && !bool(*l.Bool) {
@@ -140,10 +140,10 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if !hasNilBools(l, r) {
 					return BoolVal(bool(*l.Bool) && bool(*r.Bool)), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
-		OpOr: func(ctx context.Context, values ...*Value) (*Value, error) {
+		OpOr: func(ctx Context, values ...*Value) (*Value, error) {
 			return mapBinary(values, func(l, r *Value) (*Value, error) {
 				// short circuit eval, if lval is true, ignore rval and return true
 				if l.Bool != nil && bool(*l.Bool) {
@@ -152,7 +152,7 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if !hasNilBools(l, r) {
 					return BoolVal(bool(*l.Bool) || bool(*r.Bool)), nil
 				}
-				return nil, NewSyntaxError("type mismatch")
+				return nil, errors.New(errors.SyntaxError, "type mismatch")
 			})
 		},
 	}
@@ -163,12 +163,12 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 		return fn(ctx, values...)
 	}
 
-	return nil, NewSyntaxError("eval called on uninitialzed operator")
+	return nil, errors.New(errors.SyntaxError, "eval called on uninitialzed operator")
 }
 
 func mapBinary(vals []*Value, fn func(l, r *Value) (*Value, error)) (*Value, error) {
 	if len(vals) != 2 {
-		return nil, NewSyntaxError("expected 2 arguments got %d", len(vals))
+		return nil, errors.New(errors.SyntaxError, "expected 2 arguments got %d", len(vals))
 	}
 	return fn(vals[0], vals[1])
 }
@@ -176,7 +176,7 @@ func mapBinary(vals []*Value, fn func(l, r *Value) (*Value, error)) (*Value, err
 func mapUnary(vals []*Value, fn func(v *Value) (*Value, error)) (*Value, error) {
 	ln := len(vals)
 	if ln != 1 {
-		return nil, NewSyntaxError("expected 1 argument got %d", ln)
+		return nil, errors.New(errors.SyntaxError, "expected 1 argument got %d", ln)
 	}
 	return fn(vals[0])
 }

@@ -1,4 +1,5 @@
-package ast
+// Package errors communicates common problems to package consumers.
+package errors
 
 import "fmt"
 
@@ -12,7 +13,7 @@ const (
 	MissingKey
 	IndexOutOfRange
 	UnexpectedError
-
+	DuplicateFunction
 )
 
 type Error interface {
@@ -31,6 +32,13 @@ func (ea ErrAst) Error() string {
 
 func (ea ErrAst) Type() ErrType {
 	return ea.typ
+}
+
+func New(t ErrType, format string, v ...interface{}) error {
+	return &ErrAst{
+		msg: fmt.Sprintf(format, v...),
+		typ: t,
+	}
 }
 
 func NewUnexpectedError(form string, v ...interface{}) error {
@@ -65,13 +73,6 @@ func IndexOutOfRangeError(index string) error {
 	}
 }
 
-// TypeMismatchError indicates types of the arguments don't match when they should.
-func TypeMismatchError(l, r *Value) error {
-	return &ErrAst{
-		msg: fmt.Sprintf("type mismatch lval %#v rval %#v", l, r),
-		typ: TypeMismatch,
-	}
-}
 
 // NewUnsupportedOperatorError indicates that an unsupported operator is being used.
 func NewUnsupportedOperatorError(s string) error {

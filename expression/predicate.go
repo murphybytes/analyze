@@ -1,12 +1,11 @@
 package expression
 
 import (
-	"github.com/murphybytes/analyze/context"
 	"github.com/murphybytes/analyze/internal/ast"
 )
 
 // Evaluate takes
-func Evaluate(ctx context.Context, expression string) (bool, error) {
+func Evaluate(ctx ast.Context, expression string) (bool, error) {
 	parser := ast.Parser()
 	var t ast.Expression
 	if err := parser.ParseString("", expression, &t); err != nil {

@@ -5,6 +5,11 @@ import (
 	"github.com/murphybytes/analyze/context"
 )
 
+type Context interface {
+	Data() interface{}
+	Func(string) (context.UserDefinedFunc, bool)
+}
+
 // Value represents data types supported by the predicate expression.
 //nolint
 type Value struct {
@@ -13,8 +18,8 @@ type Value struct {
 	// String string literals represented by characters surrounded by double quotes.
 	String *string `| @String`
 	// Bool true or false keywords
-	Bool *Boolean  `| @("true" | "false")`
-	NilSet NilFlag ` | @("nil")`
+	Bool   *Boolean `| @("true" | "false")`
+	NilSet NilFlag  ` | @("nil")`
 	// Subexpressions surrounded by parenthesis, innermost subexpression are higher precedence.
 	Subexpression *Expression `| "(" @@ ")"`
 	// Variables are represented by a leading $ with subelements delimited by dots $foo.bar that are associated
@@ -24,7 +29,7 @@ type Value struct {
 	Function *Function `| @@`
 	// These are not set directly in expressions and are used to represent data passed by context.
 	Object map[string]interface{}
-	Array []interface{}
+	Array  []interface{}
 }
 
 func (v Value) IsNil() bool {
@@ -46,7 +51,7 @@ func (v Value) IsNil() bool {
 	return true
 }
 
-func(v *Value) Eval(ctx context.Context)(*Value, error){
+func (v *Value) Eval(ctx Context) (*Value, error) {
 	// TODO: Fix this so it only gets evaluated once
 	if v.Subexpression != nil {
 		return v.Subexpression.Eval(ctx)
@@ -59,40 +64,43 @@ func(v *Value) Eval(ctx context.Context)(*Value, error){
 	}
 	return v, nil
 }
+
 //nolint
 type UnaryOpValue struct {
 	Operator *Operator `@("!")?`
-	Value *Value `@@`
+	Value    *Value    `@@`
 }
 
-func (un *UnaryOpValue) Eval(ctx context.Context)(*Value,error) {
+func (un *UnaryOpValue) Eval(ctx Context) (*Value, error) {
 	v, err := un.Value.Eval(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if un.Operator != nil {
-		return un.Operator.Eval(ctx,v)
+		return un.Operator.Eval(ctx, v)
 	}
 	return v, nil
 }
+
 //nolint
 type ComparisonOpValue struct {
-	Operator Operator `@("<" | "<=" | "==" | "!=" | ">" | ">=" )?`
-	Value    *UnaryOpValue             `@@`
+	Operator Operator      `@("<" | "<=" | "==" | "!=" | ">" | ">=" )?`
+	Value    *UnaryOpValue `@@`
 }
 
-func(c *ComparisonOpValue) Eval(ctx context.Context)(*Value,error) {
+func (c *ComparisonOpValue) Eval(ctx Context) (*Value, error) {
 	return c.Value.Eval(ctx)
 }
+
 //nolint
 type ComparisonOpTerm struct {
-	Left *UnaryOpValue `@@`
+	Left  *UnaryOpValue        `@@`
 	Right []*ComparisonOpValue `@@*`
 }
 
-func(c *ComparisonOpTerm) Eval(ctx context.Context)(*Value, error){
+func (c *ComparisonOpTerm) Eval(ctx Context) (*Value, error) {
 	lv, err := c.Left.Eval(ctx)
-	if err  != nil {
+	if err != nil {
 		return nil, err
 	}
 	for _, exp := range c.Right {
@@ -110,17 +118,17 @@ func(c *ComparisonOpTerm) Eval(ctx context.Context)(*Value, error){
 
 //nolint
 type LogicalOpValue struct {
-	Operator Operator `@("&&" | "||")`
-	Value *ComparisonOpTerm `@@`
+	Operator Operator          `@("&&" | "||")`
+	Value    *ComparisonOpTerm `@@`
 }
 
 //nolint
 type Expression struct {
-	Left *ComparisonOpTerm         `@@`
+	Left  *ComparisonOpTerm `@@`
 	Right []*LogicalOpValue `@@*`
 }
 
-func (t *Expression) Eval(ctx context.Context)(*Value, error) {
+func (t *Expression) Eval(ctx Context) (*Value, error) {
 	lv, err := t.Left.Eval(ctx)
 	if err != nil {
 		return nil, err
@@ -137,5 +145,3 @@ func (t *Expression) Eval(ctx context.Context)(*Value, error) {
 	}
 	return lv, nil
 }
-
-

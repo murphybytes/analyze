@@ -1,23 +1,26 @@
 package ast
 
-import "github.com/murphybytes/analyze/context"
+import (
+	"github.com/murphybytes/analyze/context"
+	"github.com/murphybytes/analyze/errors"
+)
 //nolint
 type Function struct {
 	Name string `@Function`
 	Args []*Expression `"(" ( @@ ( "," @@ )* )? ")"`
 }
 
-func(f *Function) Eval(ctx context.Context)(*Value,error){
+func(f *Function) Eval(ctx Context)(*Value,error){
 	switch f.Name {
 	case "len":
 		return Len(ctx, f.Args)
 	}
-	return nil, NewSyntaxError("unknown function %q", f.Name)
+	return nil, errors.New(errors.SyntaxError, "unknown function %q", f.Name)
 }
 
-func Len(ctx context.Context, args []*Expression)(*Value, error){
+func Len(ctx Context, args []*Expression)(*Value, error){
 	if len(args) != 1  {
-		return nil, NewSyntaxError("wrong number of arguments for len, expected 1, got %d", len(args))
+		return nil, errors.New(errors.SyntaxError, "wrong number of arguments for len, expected 1, got %d", len(args))
 	}
 	v, err := args[0].Eval(ctx)
 	if err != nil {

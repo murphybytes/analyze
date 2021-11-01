@@ -12,8 +12,8 @@ func TestEval(t *testing.T) {
 		name       string
 		expression string
 		expected   bool
-		wantErr    bool
-		context    context.Context
+		wantErr bool
+		data    interface{}
 	}{
 		{
 			name:       "int less than",
@@ -73,7 +73,7 @@ func TestEval(t *testing.T) {
 		{
 			name:       "simple variable",
 			expression: "1 < $foo.value",
-			context: map[string]interface{}{
+			data: map[string]interface{}{
 				"foo": map[string]interface{}{
 					"value":     4,
 					"something": "xxx",
@@ -84,7 +84,7 @@ func TestEval(t *testing.T) {
 		{
 			name:       "index into object",
 			expression: `1 < $foo["value"]`,
-			context: map[string]interface{}{
+			data: map[string]interface{}{
 				"foo": map[string]interface{}{
 					"value": 5,
 				},
@@ -124,7 +124,7 @@ func TestEval(t *testing.T) {
 		{
 			name:       "index into array",
 			expression: `1 < $foo[1].bar`,
-			context: map[string]interface{}{
+			data: map[string]interface{}{
 				"foo": []interface{}{
 					map[string]interface{}{
 						"bar": 0,
@@ -139,7 +139,7 @@ func TestEval(t *testing.T) {
 		{
 			name:       "simple function",
 			expression: `len( $foo ) < 10`,
-			context: map[string]interface{}{
+			data: map[string]interface{}{
 				"foo": []interface{}{1, 2, 3},
 			},
 			expected: true,
@@ -147,7 +147,7 @@ func TestEval(t *testing.T) {
 		{
 			name:       "array root",
 			expression: "$[1] == 3",
-			context: []interface{}{
+			data: []interface{}{
 				5,
 				3,
 			},
@@ -156,35 +156,35 @@ func TestEval(t *testing.T) {
 		{
 			name: "object root",
 			expression: `$["field"] == 3 && $["another-field"] < 5`,
-			context: map[string]interface{}{
+			data: map[string]interface{}{
 				"field": 3,
 				"another-field": 4,
  			},
  			expected: true,
 		},
 		{
-			name: "scalar root",
+			name:       "scalar root",
 			expression: "$foo < 6",
-			context: 5,
-			expected: true,
+			data:       5,
+			expected:   true,
 		},
 		{
-			name: "nil type",
+			name:       "nil type",
 			expression: `$foo != nil`,
-			context: "xxx",
-			expected: true,
+			data:       "xxx",
+			expected:   true,
 		},
 		{
-			name: "nil type",
+			name:       "nil type",
 			expression: `$foo != nil`,
-			context: nil,
-			expected: false,
+			data:       nil,
+			expected:   false,
 		},
 		{
 			// avoid type mismatch because $foo.bar == 3 never is evaluated
 			name: "short circuit and",
 			expression: `false && $foo.bar == 3`,
-			context: map[string]interface{}{
+			data: map[string]interface{}{
 				"foo": map[string]interface{}{
 					"bar": nil,
 				},
@@ -195,7 +195,7 @@ func TestEval(t *testing.T) {
 			// avoid type mismatch because $foo.bar == 3 never is evaluated
 			name: "short circuit or",
 			expression: `true || $foo.bar == 3`,
-			context: map[string]interface{}{
+			data: map[string]interface{}{
 				"foo": map[string]interface{}{
 					"bar": nil,
 				},
@@ -211,7 +211,9 @@ func TestEval(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := Evaluate(tc.context, tc.expression)
+			ctx, err := context.New(tc.data)
+			require.Nil(t, err)
+			actual, err := Evaluate(ctx, tc.expression)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				return
