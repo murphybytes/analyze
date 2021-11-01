@@ -16,7 +16,7 @@ func Parser() *participle.Parser {
 			{"String", `"(\\"|[^"])*"`, nil},
 			{"Number", `[-+]?(\d*\.)?\d+`, nil},
 			{"whitespace", `[ \t]+`, nil},
-			{`Keyword`, `(?i)\b(true|false)\b`, nil},
+			{`Keyword`, `(?i)\b(nil|true|false)\b`, nil},
 			{"Operators", `!=|<=|>=|&&|==|\|\||[!()<>]`, nil},
 			{"Variable", `^\$[a-zA-Z\-"\._\[\]1-9 ]+`, nil},
 			{"Function", `(?i)\b(len|in)\b`, nil},

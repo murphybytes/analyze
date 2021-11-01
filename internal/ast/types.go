@@ -9,6 +9,13 @@ import (
 	"github.com/murphybytes/analyze/context"
 )
 
+type NilFlag bool
+
+func(n *NilFlag) Capture(values []string) error {
+	*n = true
+	return nil
+}
+
 type Boolean bool
 
 func (b *Boolean) Capture(values []string) error {
@@ -102,6 +109,8 @@ func convertToValue(intf interface{})(*Value,error){
 		val.Object = t
 	case []interface{}:
 		val.Array = t
+	case nil:
+		val.NilSet = true
 	default:
 		return nil, UnsupportedTypeError(intf)
 	}

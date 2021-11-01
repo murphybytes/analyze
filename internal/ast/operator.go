@@ -108,6 +108,9 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				if !hasNilBools(l,r) {
 					return BoolVal(bool(*l.Bool) == bool(*r.Bool) ), nil
 				}
+				if l.NilSet || r.NilSet {
+					return BoolVal(l.IsNil() == r.IsNil()), nil
+				}
 				return nil, NewSyntaxError("type mismatch")
 			})
 		},
@@ -121,6 +124,9 @@ func (o *Operator) Eval(ctx context.Context, values ...*Value) (*Value, error) {
 				}
 				if !hasNilBools(l,r) {
 					return BoolVal(bool(*l.Bool) != bool(*r.Bool) ), nil
+				}
+				if l.NilSet || r.NilSet {
+					return BoolVal(l.IsNil() != r.IsNil()), nil
 				}
 				return nil, NewSyntaxError("type mismatch")
 			})

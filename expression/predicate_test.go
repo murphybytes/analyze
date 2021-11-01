@@ -145,7 +145,7 @@ func TestEval(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:       "indexed root",
+			name:       "array root",
 			expression: "$[1] == 3",
 			context: []interface{}{
 				5,
@@ -167,6 +167,18 @@ func TestEval(t *testing.T) {
 			expression: "$foo < 6",
 			context: 5,
 			expected: true,
+		},
+		{
+			name: "nil type",
+			expression: `$foo != nil`,
+			context: "xxx",
+			expected: true,
+		},
+		{
+			name: "nil type",
+			expression: `$foo != nil`,
+			context: nil,
+			expected: false,
 		},
 	}
 

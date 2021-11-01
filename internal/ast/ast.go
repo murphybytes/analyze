@@ -14,6 +14,7 @@ type Value struct {
 	String *string `| @String`
 	// Bool true or false keywords
 	Bool *Boolean  `| @("true" | "false")`
+	NilSet NilFlag ` | @("nil")`
 	// Subexpressions surrounded by parenthesis, innermost subexpression are higher precedence.
 	Subexpression *Expression `| "(" @@ ")"`
 	// Variables are represented by a leading $ with subelements delimited by dots $foo.bar that are associated
@@ -24,6 +25,25 @@ type Value struct {
 	// These are not set directly in expressions and are used to represent data passed by context.
 	Object map[string]interface{}
 	Array []interface{}
+}
+
+func (v Value) IsNil() bool {
+	if v.Number != nil {
+		return false
+	}
+	if v.String != nil {
+		return false
+	}
+	if v.Bool != nil {
+		return false
+	}
+	if v.Object != nil {
+		return false
+	}
+	if v.Array != nil {
+		return false
+	}
+	return true
 }
 
 func(v *Value) Eval(ctx context.Context)(*Value, error){
