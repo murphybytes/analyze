@@ -202,11 +202,16 @@ func TestEval(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name: "type mismatch unary",
+			expression: "!3",
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := Evaluate(tc.expression, tc.context)
+			actual, err := Evaluate(tc.context, tc.expression)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				return

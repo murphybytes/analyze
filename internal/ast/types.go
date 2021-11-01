@@ -119,11 +119,12 @@ func convertToValue(intf interface{})(*Value,error){
 }
 
 func resolveArrayElement(arr []interface{}, reference string)(interface{}, error){
+	// make sure the variable expression looks like an array
 	if !regexArrayRef.MatchString(reference) {
 		return nil, NewSyntaxError("expected array reference got %q", reference)
 	}
 	pts := strings.Split(reference, "[")
-	_, indexStr := pts[0], pts[1]
+	indexStr := pts[1]
 	index, err  := strconv.Atoi(strings.TrimRight(indexStr, ` ]`))
 	if err != nil {
 		return nil, NewSyntaxError("error resolving array index %q", err )
