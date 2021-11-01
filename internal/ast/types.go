@@ -61,59 +61,24 @@ func walkCtx(keys []string, ctx context.Context)(*Value, error){
 	return convertToValue(inf)
 }
 // matches foo[ "key" ]
-var regexObjectRef = regexp.MustCompile(`^[\w\-]+\[\s*"[\w\-]+"\s*\]$`)
+var regexObjectRef = regexp.MustCompile(`^[\w\-]*\[\s*"[\w\-]+"\s*\]$`)
 // matches foo[2]
-var regexArrayRef =  regexp.MustCompile(`^[\w\-]+\[\s*[0-9]+\s*\]$`)
+var regexArrayRef =  regexp.MustCompile(`^[\w\-]*\[\s*[0-9]+\s*\]$`)
 // Variable names can include index expressions to map into an object, or to reference particular array elements
 // i.e. $foo.someObject["field"] or $foo.someArray[3]. This function extracts the value referenced by the key and
-// returns it.
+// returns it. It also handles the case when the  root element refers to an array, number, string etc.
 func extractVariableElement(ctx context.Context, reference string)(interface{}, error){
 	reference = strings.Trim(reference, " ")
 
-	// handle index into object object["field"]
-	if regexObjectRef.MatchString(reference) {
-		p := strings.Split(reference, "[");
-		key, index := p[0], p[1]
-		index = strings.Trim(index, ` ]"`)
-		// we  expect an object
-		obj, ok := ctx[key].(map[string]interface{})
-		if !ok {
-			return nil, MissingKeyError(key)
-		}
-		intf, ok := obj[index]
-		if !ok {
-			return nil, IndexOutOfRangeError(reference)
-		}
-		return intf, nil
+	switch t := ctx.(type) {
+	case []interface{}:
+		return resolveArrayElement(t, reference)
+	case map[string]interface{}:
+		return resolveObjectField(t, reference)
 	}
 
-	// handle index into array array[3]
-	if regexArrayRef.MatchString(reference) {
-		p := strings.Split(reference, "[")
-		key, str := p[0], p[1]
-		// we expect an array
-		index, err := strconv.Atoi(strings.Trim(str, ` ]`))
-		if err != nil {
-			return nil, NewSyntaxError(fmt.Sprintf("can't resolve %s into an array element", reference))
-		}
-		arr, ok := ctx[key].([]interface{})
-		if !ok {
-			return nil, MissingKeyError(key)
-		}
-
-		if !(index < len(arr)) {
-			return nil, IndexOutOfRangeError(reference)
-		}
-
-		return arr[index], nil
-	}
-
-
-	inf, ok := ctx[reference]
-	if !ok {
-		return nil, MissingKeyError(reference)
-	}
-	return inf, nil
+	// pass through scalar types
+	return ctx, nil
 }
 
 func convertToValue(intf interface{})(*Value,error){
@@ -141,4 +106,65 @@ func convertToValue(intf interface{})(*Value,error){
 		return nil, UnsupportedTypeError(intf)
 	}
 	return &val, nil
+}
+
+func resolveArrayElement(arr []interface{}, reference string)(interface{}, error){
+	if !regexArrayRef.MatchString(reference) {
+		return nil, NewSyntaxError("expected array reference got %q", reference)
+	}
+	pts := strings.Split(reference, "[")
+	_, indexStr := pts[0], pts[1]
+	index, err  := strconv.Atoi(strings.TrimRight(indexStr, ` ]`))
+	if err != nil {
+		return nil, NewSyntaxError("error resolving array index %q", err )
+	}
+	if !(index < len(arr)) {
+		return nil, NewSyntaxError("index out of range")
+	}
+	return arr[index], nil
+}
+
+func resolveObjectField(obj map[string]interface{}, reference string)(interface{},error){
+	// handle index into object object["field"]
+	if regexObjectRef.MatchString(reference) {
+		p := strings.Split(reference, "[")
+		key, index := p[0], p[1]
+		index = strings.Trim(index, ` ]"`)
+		// we  expect an object
+		var ok bool
+		if len(key) > 0 {
+			if obj, ok = obj[key].(map[string]interface{}); !ok {
+				return nil, MissingKeyError(key)
+			}
+		}
+		var result interface{}
+		if result, ok = obj[index]; !ok {
+			return nil, IndexOutOfRangeError(reference)
+		}
+
+		return result, nil
+	}
+
+	// handle index into array array[3]
+	if regexArrayRef.MatchString(reference) {
+		p := strings.Split(reference, "[")
+		key, str := p[0], p[1]
+		// we expect an array
+		index, err := strconv.Atoi(strings.Trim(str, ` ]`))
+		if err != nil {
+			return nil, NewSyntaxError(fmt.Sprintf("can't resolve %s into an array element", reference))
+		}
+		arr, ok := obj[key].([]interface{})
+		if !ok {
+			return nil, MissingKeyError(key)
+		}
+
+		if !(index < len(arr)) {
+			return nil, IndexOutOfRangeError(reference)
+		}
+
+		return arr[index], nil
+	}
+
+	return obj[reference], nil
 }

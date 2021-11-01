@@ -92,34 +92,34 @@ func TestEval(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "string equality",
+			name:       "string equality",
 			expression: `"one" == "one"`,
-			expected: true,
+			expected:   true,
 		},
 		{
-			name: "string equality false ",
+			name:       "string equality false ",
 			expression: `"one" == "two"`,
-			expected: false,
+			expected:   false,
 		},
 		{
-			name: "string not equals ",
+			name:       "string not equals ",
 			expression: `"one" != "two"`,
-			expected: true,
+			expected:   true,
 		},
 		{
-			name: "binary or",
+			name:       "binary or",
 			expression: `( 2 < 1 ) || ( 5 < 6)`,
-			expected: true,
+			expected:   true,
 		},
 		{
-			name: "greater than",
+			name:       "greater than",
 			expression: `2 > 1`,
-			expected: true,
+			expected:   true,
 		},
 		{
-			name: "greater than or equal to",
+			name:       "greater than or equal to",
 			expression: `3 >= 4 && 3 >= 3`,
-			expected: true,
+			expected:   true,
 		},
 		{
 			name:       "index into array",
@@ -142,6 +142,30 @@ func TestEval(t *testing.T) {
 			context: map[string]interface{}{
 				"foo": []interface{}{1, 2, 3},
 			},
+			expected: true,
+		},
+		{
+			name:       "indexed root",
+			expression: "$[1] == 3",
+			context: []interface{}{
+				5,
+				3,
+			},
+			expected: true,
+		},
+		{
+			name: "object root",
+			expression: `$["field"] == 3 && $["another-field"] < 5`,
+			context: map[string]interface{}{
+				"field": 3,
+				"another-field": 4,
+ 			},
+ 			expected: true,
+		},
+		{
+			name: "scalar root",
+			expression: "$foo < 6",
+			context: 5,
 			expected: true,
 		},
 	}
