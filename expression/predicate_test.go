@@ -1,6 +1,7 @@
 package expression
 
 import (
+	"github.com/murphybytes/analyze/internal/ast"
 	"testing"
 
 	"github.com/murphybytes/analyze/context"
@@ -12,8 +13,8 @@ func TestEval(t *testing.T) {
 		name       string
 		expression string
 		expected   bool
-		wantErr bool
-		data    interface{}
+		wantErr    bool
+		data       interface{}
 	}{
 		{
 			name:       "int less than",
@@ -138,7 +139,7 @@ func TestEval(t *testing.T) {
 		},
 		{
 			name:       "simple function",
-			expression: `len( $foo ) < 10`,
+			expression: `@len( $foo ) < 10`,
 			data: map[string]interface{}{
 				"foo": []interface{}{1, 2, 3},
 			},
@@ -154,13 +155,13 @@ func TestEval(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "object root",
+			name:       "object root",
 			expression: `$["field"] == 3 && $["another-field"] < 5`,
 			data: map[string]interface{}{
-				"field": 3,
+				"field":         3,
 				"another-field": 4,
- 			},
- 			expected: true,
+			},
+			expected: true,
 		},
 		{
 			name:       "scalar root",
@@ -182,7 +183,7 @@ func TestEval(t *testing.T) {
 		},
 		{
 			// avoid type mismatch because $foo.bar == 3 never is evaluated
-			name: "short circuit and",
+			name:       "short circuit and",
 			expression: `false && $foo.bar == 3`,
 			data: map[string]interface{}{
 				"foo": map[string]interface{}{
@@ -193,7 +194,7 @@ func TestEval(t *testing.T) {
 		},
 		{
 			// avoid type mismatch because $foo.bar == 3 never is evaluated
-			name: "short circuit or",
+			name:       "short circuit or",
 			expression: `true || $foo.bar == 3`,
 			data: map[string]interface{}{
 				"foo": map[string]interface{}{
@@ -203,10 +204,18 @@ func TestEval(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "type mismatch unary",
+			name:       "type mismatch unary",
 			expression: "!3",
-			wantErr: true,
+			wantErr:    true,
 		},
+		{
+			name: "select test",
+			expression: `@len( @select( $arr, "$elt == 3" ) ) > 2`,
+			data: []interface{}{3,1,2,3,3},
+			expected: true,
+		},
+		// TODO: test to ensure object reference like obj["foo"] or obj.foo where foo does
+		// TODO: not exist resolves to nil
 	}
 
 	for _, tc := range tt {
@@ -224,4 +233,57 @@ func TestEval(t *testing.T) {
 		})
 	}
 
+}
+
+func TestUserDefinedFunctions(t *testing.T) {
+	tt := []struct {
+		name       string
+		fns        map[string]ast.UserDefinedFunc
+		expression string
+		expected   bool
+		wantErr    bool
+		data       interface{}
+	}{
+		{
+			name: "simple function",
+			fns: map[string]ast.UserDefinedFunc{
+				"@tester": func(a []interface{}) (interface{}, error) {
+					return a[0], nil
+				},
+			},
+			expression: `@tester($foo) == $foo`,
+			data:       2,
+			expected:   true,
+		},
+		{
+			name: "string arg",
+			fns: map[string]ast.UserDefinedFunc{
+				"@tester": func(a []interface{}) (interface{}, error) {
+					return a[0], nil
+				},
+			},
+			expression: `@tester(2 , "$foo == 3") == 2`,
+			data: 2,
+			expected:   true,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			var opts []context.Option
+			for name, fn := range tc.fns {
+				opts = append(opts, context.Func(name, fn))
+			}
+			ctx, err := context.New(tc.data, opts...)
+			require.Nil(t, err)
+			actual, err := Evaluate(ctx, tc.expression)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				return
+			}
+			require.Nil(t, err)
+			require.Equal(t, actual, tc.expected)
+
+		})
+	}
 }

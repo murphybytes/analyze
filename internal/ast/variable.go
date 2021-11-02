@@ -118,9 +118,9 @@ func convertToValue(intf interface{})(*Value,error){
 }
 
 func resolveArrayElement(arr []interface{}, reference string)(interface{}, error){
-	// make sure the variable expression looks like an array
+	// if the variable reference doesn't contain square brackets return the whole array
 	if !regexArrayRef.MatchString(reference) {
-		return nil, errors.NewSyntaxError("expected array reference got %q", reference)
+		return arr, nil
 	}
 	pts := strings.Split(reference, "[")
 	indexStr := pts[1]

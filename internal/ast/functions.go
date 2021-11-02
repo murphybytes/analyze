@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/murphybytes/analyze/context"
+	"fmt"
 	"github.com/murphybytes/analyze/errors"
 )
 //nolint
@@ -11,29 +11,45 @@ type Function struct {
 }
 
 func(f *Function) Eval(ctx Context)(*Value,error){
-	switch f.Name {
-	case "len":
-		return Len(ctx, f.Args)
+	fn, ok := ctx.Func(f.Name)
+	if !ok {
+		return nil, errors.New(errors.InvalidFunction, "function %q has not been declared", f.Name)
 	}
-	return nil, errors.New(errors.SyntaxError, "unknown function %q", f.Name)
-}
-
-func Len(ctx Context, args []*Expression)(*Value, error){
-	if len(args) != 1  {
-		return nil, errors.New(errors.SyntaxError, "wrong number of arguments for len, expected 1, got %d", len(args))
+	var args []interface{}
+	for _, expr := range f.Args {
+		v, err := expr.Eval(ctx)
+		if err != nil {
+			return nil, err
+		}
+		arg, err := valToInterface(v)
+		if err != nil {
+			fmt.Errorf("%q call is invalid %w", f.Name, err )
+		}
+		args = append(args, arg )
 	}
-	v, err := args[0].Eval(ctx)
+	result, err :=  fn(args)
 	if err != nil {
 		return nil, err
 	}
-	f := float64(len(v.Array))
-	return &Value{
-		Number: &f,
-	}, nil
+	return convertToValue(result)
 }
 
-// In -> in( value, array ) returns true if the value is in the array
-func In(ctx context.Context, args []*Expression)(*Value,error){
-	panic("not implemented")
+func valToInterface(v *Value)(interface{},error){
+	switch {
+	case v.String != nil :
+		return *v.String, nil
+	case v.Bool != nil :
+		return *v.Bool, nil
+	case v.Number != nil :
+		return *v.Number, nil
+	case bool(v.NilSet):
+		return nil, nil
+	case v.Object != nil :
+		return v.Object, nil
+	case v.Array != nil :
+		return v.Array, nil
+	}
+	return nil, errors.New(errors.InvalidArgumentType, "argument type not supported")
 }
+
 

@@ -3,10 +3,12 @@ package context
 
 import (
 	"github.com/murphybytes/analyze/errors"
+	"github.com/murphybytes/analyze/internal/ast"
+	"regexp"
 )
 
-type UserDefinedFunc func(a ...interface{}) (interface{}, error)
-type functionTable map[string]UserDefinedFunc
+
+type functionTable map[string]ast.UserDefinedFunc
 type Option func(*Context) error
 
 type Context struct {
@@ -18,13 +20,18 @@ func(c Context) Data() interface{} {
 	return c.data
 }
 
-func(c Context) Func(name string)(UserDefinedFunc, bool){
+func(c Context) Func(name string)(ast.UserDefinedFunc, bool){
 	fn, ok := c.functions[name]
 	return fn, ok
 }
 
-func Func(name string, definedFunc UserDefinedFunc) Option {
+var functionNameMatcher = regexp.MustCompile(`^@[A-Za-z0-9_]\w*`)
+
+func Func(name string, definedFunc ast.UserDefinedFunc) Option {
 	return func(ctx *Context) error {
+		if !functionNameMatcher.MatchString(name) {
+			return errors.New(errors.InvalidFunction, "%q is not a valid function name", name)
+		}
 		if _, ok := ctx.functions[name]; ok {
 			return errors.New(errors.DuplicateFunction, "function name %q already in use", name)
 		}
@@ -40,7 +47,12 @@ func New(data interface{}, options ...Option) (*Context, error) {
 
 	ctx := Context{
 		data:      data,
-		functions: make(functionTable),
+	}
+
+	// builtin functions
+	ctx.functions = functionTable{
+		"@len": _len,
+		"@select": _select,
 	}
 
 	for _, opt := range options {

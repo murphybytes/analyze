@@ -17,9 +17,9 @@ func Parser() *participle.Parser {
 			{"Number", `[-+]?(\d*\.)?\d+`, nil},
 			{"whitespace", `[ \t]+`, nil},
 			{`Keyword`, `(?i)\b(nil|true|false)\b`, nil},
-			{"Operators", `!=|<=|>=|&&|==|\|\||[!()<>]`, nil},
-			{"Variable", `^\$[a-zA-Z\-"\._\[\]1-9 ]+`, nil},
-			{"Function", `(?i)\b(len|in)\b`, nil},
+			{"Operators", `!=|<=|>=|&&|==|\|\||[!()<>,]`, nil},
+			{"Variable", `\$[a-zA-Z\-"\._\[\]1-9 ]+`, nil},
+			{"Function", `^@[a-zA-Z_]\w*`, nil },
 		})
 		_parser = participle.MustBuild(&Expression{},
 			participle.Lexer(def),

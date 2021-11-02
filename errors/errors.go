@@ -14,6 +14,8 @@ const (
 	IndexOutOfRange
 	UnexpectedError
 	DuplicateFunction
+	InvalidFunction
+	InvalidArgumentType
 )
 
 type Error interface {

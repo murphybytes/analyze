@@ -1,13 +1,11 @@
 // Package ast contains the components of an abstract syntax tree that represents a predicate Expression.
 package ast
 
-import (
-	"github.com/murphybytes/analyze/context"
-)
+type UserDefinedFunc func(a []interface{}) (interface{}, error)
 
 type Context interface {
 	Data() interface{}
-	Func(string) (context.UserDefinedFunc, bool)
+	Func(string) (UserDefinedFunc, bool)
 }
 
 // Value represents data types supported by the predicate expression.

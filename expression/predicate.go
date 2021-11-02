@@ -6,6 +6,7 @@ import (
 
 // Evaluate takes
 func Evaluate(ctx ast.Context, expression string) (bool, error) {
+
 	parser := ast.Parser()
 	var t ast.Expression
 	if err := parser.ParseString("", expression, &t); err != nil {
