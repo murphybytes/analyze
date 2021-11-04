@@ -214,6 +214,32 @@ func TestEval(t *testing.T) {
 			data: []interface{}{3,1,2,3,3},
 			expected: true,
 		},
+		{
+			name: "in func test",
+			expression: `@in( @array(1, 2, 3), 2)`,
+			expected: true,
+		},
+		{
+			name: "in with string arr var",
+			expression: `@in( $arr, "foo")`,
+			data: []interface{}{
+				"zip",
+				"foo",
+				"bazz",
+			},
+			expected: true,
+		},
+		{
+			name: "has function",
+			expression: `@has($bar, "foo") && $bar.foo == 3`,
+			data: map[string]interface{}{
+				"bar": map[string]interface{}{
+					"foo": 3,
+				},
+			},
+			expected: true,
+		},
+		// TODO: infer type from $ in other orders a plain dollar sign is an unnamed type 
 		// TODO: test to ensure object reference like obj["foo"] or obj.foo where foo does
 		// TODO: not exist resolves to nil
 	}

@@ -8,34 +8,6 @@ import (
 	"strings"
 )
 
-type NilFlag bool
-
-func(n *NilFlag) Capture(values []string) error {
-	*n = true
-	return nil
-}
-
-type Boolean bool
-
-func (b *Boolean) Capture(values []string) error {
-	if len(values) == 0 {
-		panic("no values in capture")
-	}
-	*b = strings.Join(values, "") == "true"
-	return nil
-}
-
-func (b Boolean) Not() *Boolean {
-	v := Boolean(!bool(b))
-	return &v
-}
-
-func BoolVal(v bool) *Value {
-	b := Boolean(v)
-	return &Value{
-		Bool: &b,
-	}
-}
 
 type Variable string
 
@@ -105,6 +77,9 @@ func convertToValue(intf interface{})(*Value,error){
 		val.String = &t
 	case *string:
 		val.String = t
+	case bool:
+		v := Boolean(t)
+		val.Bool = &v
 	case map[string]interface{}:
 		val.Object = t
 	case []interface{}:

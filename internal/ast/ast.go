@@ -18,6 +18,7 @@ type Value struct {
 	// Bool true or false keywords
 	Bool   *Boolean `| @("true" | "false")`
 	NilSet NilFlag  ` | @("nil")`
+
 	// Subexpressions surrounded by parenthesis, innermost subexpression are higher precedence.
 	Subexpression *Expression `| "(" @@ ")"`
 	// Variables are represented by a leading $ with subelements delimited by dots $foo.bar that are associated

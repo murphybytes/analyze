@@ -53,6 +53,9 @@ func New(data interface{}, options ...Option) (*Context, error) {
 	ctx.functions = functionTable{
 		"@len": _len,
 		"@select": _select,
+		"@in": _in ,
+		"@array": _array,
+		"@has": _has,
 	}
 
 	for _, opt := range options {
