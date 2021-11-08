@@ -64,6 +64,7 @@ func New(data interface{}, options ...Option) (*Context, error) {
 		"@in": _in ,
 		"@array": _array,
 		"@has": _has,
+		"@match": _match,
 	}
 
 	for _, opt := range options {

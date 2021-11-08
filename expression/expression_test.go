@@ -249,6 +249,11 @@ func TestEval(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name: "match",
+			expression: `@match("10.10.10.10", /^([0-9]{1,3}\.){3}[0-9]{1,3}$/)`,
+			expected: true,
+		},
 	}
 
 	for _, tc := range tt {

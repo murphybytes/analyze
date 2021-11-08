@@ -24,6 +24,7 @@ type Value struct {
 	// Variables are represented by a leading $ with subelements delimited by dots $foo.bar that are associated
 	// with map keys in passed in contexts that are used to pass in data.
 	Variable *Variable `| @Variable`
+	RegularExpression *RegularExpression `| @RegularExpression`
 	// Function
 	Function *Function `| @@`
 	// These are not set directly in expressions and are used to represent data passed by context.
@@ -57,6 +58,9 @@ func (v *Value) Eval(ctx Context) (*Value, error) {
 	}
 	if v.Variable != nil {
 		return v.Variable.Eval(ctx)
+	}
+	if v.RegularExpression != nil {
+		return v.RegularExpression.Eval(ctx)
 	}
 	if v.Function != nil {
 		return v.Function.Eval(ctx)

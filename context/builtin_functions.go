@@ -3,6 +3,7 @@ package context
 import (
 	"github.com/murphybytes/analyze/errors"
 	"github.com/murphybytes/analyze/internal/ast"
+	"regexp"
 )
 
 // @len(arr) returns the length of an array
@@ -98,6 +99,25 @@ func _has(args []interface{})(interface{},error){
 		return present, nil
 	}
 	return nil, errors.New(errors.TypeMismatch, "expected object for first argument of has function")
+}
+
+func _match(args []interface{})(interface{},error){
+	if len(args) != 2 {
+		return nil, errors.New(errors.SyntaxError, "match expects 2 arguments")
+	}
+	val, ok := args[0].(string)
+	if !ok {
+		return nil, errors.New(errors.TypeMismatch, "match expects string argument")
+	}
+	exp, ok := args[1].(string)
+	if !ok {
+		return nil, errors.New(errors.TypeMismatch, "match expects string argument 2")
+	}
+	regex, err := regexp.Compile(exp)
+	if err != nil {
+		return nil, err
+	}
+	return regex.MatchString(val), nil
 }
 
 func compare(l, r interface{}) (bool, error) {

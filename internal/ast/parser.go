@@ -20,6 +20,7 @@ func Parser() *participle.Parser {
 			{"Operators", `!=|<=|>=|&&|==|\|\||[!()<>,]`, nil},
 			{"Variable", `\$[a-zA-Z\-"\._\[\]1-9 ]+`, nil},
 			{"Function", `^@[a-zA-Z_]\w*`, nil },
+			{"RegularExpression", `/\^?[0-9a-zA-Z\(\)\?\:\[\]\{\}\,\.\-\*\+\\]+\$?/`, nil},
 		})
 		_parser = participle.MustBuild(&Expression{},
 			participle.Lexer(def),
