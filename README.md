@@ -39,7 +39,7 @@ reference a supplied data set as well as a set of builtin functions. If the exis
 use case it's easy to define your own functions. 
 ```go
 func MyFunction(args  []interface{})(interface{}, error) {
-	// you implementation 
+	// your implementation 
 }
 
 ctx, _ := context.New(data, context.Func("@myfunc", MyFunction))
