@@ -1,4 +1,4 @@
-// Package context defines data that is passed to the Evaluate function and maps to variables.
+// Package context defines data and optional user functions that are used to evaluate expressions.
 package context
 
 import (
@@ -9,17 +9,21 @@ import (
 
 
 type functionTable map[string]ast.UserDefinedFunc
+// Option optional function for New.
 type Option func(*Context) error
 
+// Context contains data used to evaluate expression.
 type Context struct {
 	data      interface{}
 	functions functionTable
 }
 
+// Data returns data that maps to variables defined in expressions.
 func(c Context) Data() interface{} {
 	return c.data
 }
 
+// Func returns a named function.
 func(c Context) Func(name string)(ast.UserDefinedFunc, bool){
 	fn, ok := c.functions[name]
 	return fn, ok
@@ -27,6 +31,8 @@ func(c Context) Func(name string)(ast.UserDefinedFunc, bool){
 
 var functionNameMatcher = regexp.MustCompile(`^@[A-Za-z0-9_]\w*`)
 
+// Func pass a user defined function to a new context.  The name for the function must be prefaced by '@' for
+// example @abs.  You would then use the function in an expression thus: @abs(-10) > 9
 func Func(name string, definedFunc ast.UserDefinedFunc) Option {
 	return func(ctx *Context) error {
 		if !functionNameMatcher.MatchString(name) {
@@ -40,6 +46,8 @@ func Func(name string, definedFunc ast.UserDefinedFunc) Option {
 	}
 }
 
+// New creates a new context with data that can be referenced in variables in expressions.  User defined functions
+// can optionally be passed as well.
 func New(data interface{}, options ...Option) (*Context, error) {
 	if err := validate(data); err != nil {
 		return nil ,err

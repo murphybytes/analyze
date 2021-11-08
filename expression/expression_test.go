@@ -1,11 +1,13 @@
 package expression
 
 import (
+	"fmt"
 	"github.com/murphybytes/analyze/internal/ast"
 	"testing"
 
 	"github.com/murphybytes/analyze/context"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestEval(t *testing.T) {
@@ -165,19 +167,19 @@ func TestEval(t *testing.T) {
 		},
 		{
 			name:       "scalar root",
-			expression: "$foo < 6",
+			expression: "$ < 6",
 			data:       5,
 			expected:   true,
 		},
 		{
 			name:       "nil type",
-			expression: `$foo != nil`,
+			expression: `$ != nil`,
 			data:       "xxx",
 			expected:   true,
 		},
 		{
 			name:       "nil type",
-			expression: `$foo != nil`,
+			expression: `$ != nil`,
 			data:       nil,
 			expected:   false,
 		},
@@ -209,18 +211,18 @@ func TestEval(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "select test",
+			name:       "select test",
 			expression: `@len( @select( $arr, "$elt == 3" ) ) > 2`,
-			data: []interface{}{3,1,2,3,3},
-			expected: true,
+			data:       []interface{}{3, 1, 2, 3, 3},
+			expected:   true,
 		},
 		{
-			name: "in func test",
+			name:       "in func test",
 			expression: `@in( @array(1, 2, 3), 2)`,
-			expected: true,
+			expected:   true,
 		},
 		{
-			name: "in with string arr var",
+			name:       "in with string arr var",
 			expression: `@in( $arr, "foo")`,
 			data: []interface{}{
 				"zip",
@@ -230,7 +232,7 @@ func TestEval(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "has function",
+			name:       "has function",
 			expression: `@has($bar, "foo") && $bar.foo == 3`,
 			data: map[string]interface{}{
 				"bar": map[string]interface{}{
@@ -239,9 +241,14 @@ func TestEval(t *testing.T) {
 			},
 			expected: true,
 		},
-		// TODO: infer type from $ in other orders a plain dollar sign is an unnamed type 
-		// TODO: test to ensure object reference like obj["foo"] or obj.foo where foo does
-		// TODO: not exist resolves to nil
+		{
+			name:       "root object dotted reference",
+			expression: `3 < $foo`,
+			data: map[string]interface{}{
+				"foo": 4,
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tt {
@@ -289,7 +296,7 @@ func TestUserDefinedFunctions(t *testing.T) {
 				},
 			},
 			expression: `@tester(2 , "$foo == 3") == 2`,
-			data: 2,
+			data:       2,
 			expected:   true,
 		},
 	}
@@ -312,4 +319,52 @@ func TestUserDefinedFunctions(t *testing.T) {
 
 		})
 	}
+}
+
+func TestPreparedExpression(t *testing.T) {
+	tt := []struct {
+		data     interface{}
+		expected bool
+	}{
+		{
+
+			data:     2,
+			expected: true,
+		},
+		{
+			data:     5,
+			expected: false,
+		},
+		{
+			data:     7,
+			expected: false,
+		},
+	}
+
+	expression, err := Prepare("$ < 3")
+	require.Nil(t, err)
+	g := new(errgroup.Group)
+
+	for i := 0; i < len(tt); i++ {
+
+		g.Go(func(d interface{}, expected bool, j int) func() error {
+			return func() error {
+				ctx, err := context.New(d)
+				if err != nil {
+					return err
+				}
+				actual, err := expression.Evaluate(ctx)
+				if err != nil {
+					return err
+				}
+				if actual != expected {
+					return fmt.Errorf("test %d failed", j)
+				}
+				return nil
+			}
+		}(tt[i].data, tt[i].expected, i))
+	}
+
+	require.Nil(t, g.Wait())
+
 }

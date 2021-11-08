@@ -4,7 +4,7 @@ GOPATH ?= $(shell go env GOPATH)
 
 .PHONY:
 test:
-	@go test -v -coverpkg=./... -coverprofile c.out ./...
+	@go test -v -race -coverpkg=./... -coverprofile c.out ./...
 
 .PHONY:
 cover: test
