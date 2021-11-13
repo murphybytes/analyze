@@ -101,6 +101,7 @@ func _has(args []interface{})(interface{},error){
 	return nil, errors.New(errors.TypeMismatch, "expected object for first argument of has function")
 }
 
+// @match(string, regex-string) returns true if string matches regex-string of the form /regular expression/
 func _match(args []interface{})(interface{},error){
 	if len(args) != 2 {
 		return nil, errors.New(errors.SyntaxError, "match expects 2 arguments")

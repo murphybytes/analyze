@@ -28,7 +28,7 @@ ctx, err := context.New(data)
 if err != nil {
 	log.Fatal(err)
 }
-result, err := expression.Evaluate(ctx, `@len( @select( $resources.config_maps, "$elt.firstName == 'John'" ) ) > 0`)
+result, err := expression.EvaluateContext(ctx, `@len( @select( $resources.config_maps, "$elt.firstName == 'John'" ) ) > 0`)
 if result {
 	fmt.Println("found John!")
 }
@@ -43,6 +43,10 @@ func MyFunction(args  []interface{})(interface{}, error) {
 }
 
 ctx, _ := context.New(data, context.Func("@myfunc", MyFunction))
-result, _ := expression.Evaluate(ctx, `@myfunc($foo) == "hello"`)
+result, _ := expression.EvaluateContext(ctx, `@myfunc($foo) == "hello"`)
 
 ```
+
+## Examples
+Programs illustrating the usage of Analyze can be found in the examples directory. Also see the 
+unit tests in the analyzer/expression package for more examples of expressions and how they are used. 
