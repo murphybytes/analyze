@@ -1,7 +1,0 @@
-queries:
-  - query:
-      id: 1
-      expression: SELECT name, path, pid FROM processes WHERE on_disk =  0;
-  - query:
-      id: 2
-      expression:

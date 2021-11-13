@@ -1,0 +1,26 @@
+{
+  "collectors": [
+    {
+      "id": "process-check",
+      "expression": "SELECT name, path, pid FROM processes WHERE on_disk = 0;"
+    }
+  ],
+  "checks": [
+    {
+      "collector-id": "process-check",
+      "Description": "processes running without binary on disk",
+      "conditions": [
+        {
+          "type": "warn",
+          "predicate": "@len( $ ) > 0",
+          "message": "possible malicious processes exist"
+        },
+        {
+          "type": "pass",
+          "predicate": "@len( $ ) == 0",
+          "message": "no suspect processes found"
+        }
+      ]
+    }
+  ]
+}

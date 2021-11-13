@@ -260,7 +260,7 @@ func TestEval(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, err := context.New(tc.data)
 			require.Nil(t, err)
-			actual, err := Evaluate(ctx, tc.expression)
+			actual, err := EvaluateContext(ctx, tc.expression)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				return
@@ -314,7 +314,7 @@ func TestUserDefinedFunctions(t *testing.T) {
 			}
 			ctx, err := context.New(tc.data, opts...)
 			require.Nil(t, err)
-			actual, err := Evaluate(ctx, tc.expression)
+			actual, err := EvaluateContext(ctx, tc.expression)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				return
