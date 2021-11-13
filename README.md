@@ -1,5 +1,7 @@
 # Analyze
 
+[![Documentation](https://godoc.org/github.com/murphybytes/analyze?status.svg)](http://godoc.org/github.com/murphybytes/analyze)
+
 A predicate expression evaluator designed to embed logical expressions in YAML or JSON. Think of being able to 
 apply a SQL where clause on a set of data that you supply.  For example, let say we have an array of objects.
 ```json
